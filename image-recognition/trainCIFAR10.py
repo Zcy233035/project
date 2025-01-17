@@ -9,37 +9,36 @@ from tqdm import tqdm
 class Net(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        # 定义卷积层
-        self.conv1 = torch.nn.Conv2d(3, 32, kernel_size=3)  # 输入为 3 通道（RGB），输出 32 通道
+
+        self.conv1 = torch.nn.Conv2d(3, 32, kernel_size=3)
         self.conv2 = torch.nn.Conv2d(32, 64, kernel_size=3)
 
-        # 使用示例输入确定展平后的大小
-        with torch.no_grad():
-            sample_input = torch.zeros(1, 3, 32, 32)  # 创建一个 32x32 的 CIFAR-10 样本
-            sample_output = self.conv2(self.conv1(sample_input))
-            self.flat_size = sample_output.view(-1).size(0)  # 展平后的大小
 
-        # 定义全连接层
+        with torch.no_grad():
+            sample_input = torch.zeros(1, 3, 32, 32)
+            sample_output = self.conv2(self.conv1(sample_input))
+            self.flat_size = sample_output.view(-1).size(0)
+
+
         self.fc1 = torch.nn.Linear(self.flat_size, 128)
         self.fc2 = torch.nn.Linear(128, 10)
 
     def forward(self, x):
         x = torch.nn.functional.relu(self.conv1(x))
         x = torch.nn.functional.relu(self.conv2(x))
-        x = x.view(x.size(0), -1)  # 将特征展平
+        x = x.view(x.size(0), -1)
         x = torch.nn.functional.relu(self.fc1(x))
         x = torch.nn.functional.log_softmax(self.fc2(x), dim=1)
         return x
 
 
 def get_data_loader(is_train):
-    # 定义数据存储路径，比如放在当前项目的 'data' 文件夹下
+
     data_path = "./CIFARDATA"
 
-    # CIFAR-10 数据集需要归一化
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # CIFAR-10 数据集的均值和标准差
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
     data_set = CIFAR10(data_path, train=is_train, transform=transform, download=True)
@@ -80,7 +79,7 @@ def main():
 
         print("Epoch", epoch + 1, "accuracy:", evaluate(test_data, net))
 
-    # 选择错误分类的图像
+
     misclassified = []
     with torch.no_grad():
         for (x, y) in test_data:
@@ -94,10 +93,9 @@ def main():
             if len(misclassified) >= 3:
                 break
 
-    # 显示前三个错误分类的图像
     for n, (img, true_label, predicted_label) in enumerate(misclassified):
         plt.figure(n)
-        plt.imshow((img.permute(1, 2, 0) * 0.5 + 0.5).numpy())  # 反归一化并转换通道
+        plt.imshow((img.permute(1, 2, 0) * 0.5 + 0.5).numpy())
         plt.title(f"True label: {int(true_label)}, Prediction: {int(predicted_label)}")
     plt.show()
 
